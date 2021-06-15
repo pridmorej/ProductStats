@@ -1,0 +1,68 @@
+﻿@using ProductStats.Models
+@using ProductStats.Services
+@using System.Diagnostics
+
+@implements IDisposable
+
+@inject ProductStatsManager _productStatsManager
+
+@if (productStats == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="product-stat">
+        <span class="mr-1">Product: @productId / @productStats.ProductId</span>
+        <span class="mr-1">O: @productStats.Open</span>
+        <span class="mr-1">L: @productStats.Low</span>
+        <span class="mr-1">H: @productStats.High</span>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string productId { get; set; }
+
+    private ProductStat productStats { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Get the latest productStats...
+            productStats = await _productStatsManager.LatestProductStatsFor(productId);
+            Debug.Assert(productStats.ProductId == productId);
+            AttachEvent();
+            StateHasChanged();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        DetachEvent();
+    }
+
+    public void AttachEvent()
+    {
+        _productStatsManager.OnUpdated += ProductStatsManager_OnUpdated;
+    }
+
+    public void DetachEvent()
+    {
+        _productStatsManager.OnUpdated -= ProductStatsManager_OnUpdated;
+    }
+
+    private async void ProductStatsManager_OnUpdated(object sender, ProductStat e)
+    {
+        // Only update if the product this panel is for has been updated.
+        if (e.ProductId != productId) return;
+        productStats = e;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}

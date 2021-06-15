@@ -1,0 +1,78 @@
+﻿@using ProductStats.Services
+@using ProductStats.Models
+@using ProductStats
+
+@implements IDisposable
+
+@inject TickerManager _tickerManager
+
+@if (productTickerVms == null)
+{
+    <div><em>Loading...</em></div>
+}
+else
+{
+    <div class="product-ticker-panel">
+        <div class="top-row pl-4">
+            <span class="product-ticker-header">Product Count: @_tickerManager.ProductTickers.Count</span>
+        </div>
+        <div id="productAccordian" class="overflow-auto">
+            @foreach (var vm in productTickerVms.OrderBy(pt => pt.ProductTicker.ProductId)
+                                                       .OrderBy(pt => pt.HasOpenPositions ? 1 : 2))
+            {
+                <ProductTickerPanel vm="@vm"></ProductTickerPanel>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProductTickerVM> productTickerVms;
+
+    protected override Task OnInitializedAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            AttachEvents();
+            FilterProductTickers();
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose()
+    {
+        DetachEvents();
+    }
+
+    public void AttachEvents()
+    {
+        _tickerManager.OnAdded += TickerManager_OnAdded;
+    }
+
+    public void DetachEvents()
+    {
+        _tickerManager.OnAdded -= TickerManager_OnAdded;
+    }
+
+    private async void TickerManager_OnAdded(object o, EventArgs e)
+    {
+        FilterProductTickers();
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void FilterProductTickers()
+    {
+        productTickerVms = _tickerManager.ProductTickers
+                                 .Select(pt => new ProductTickerVM(pt)
+                                 {
+                                     HasOpenPositions = false
+                                 })
+                                 .ToList();
+    }
+}

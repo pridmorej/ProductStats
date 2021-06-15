@@ -1,0 +1,66 @@
+﻿@using ProductStats.Services
+@using ProductStats.Models
+@using ProductStats
+@using Microsoft.Extensions.Logging;
+
+@implements IDisposable
+
+@if (vm == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <div>
+            <div class="product">
+                <button class="product-ticker-panel-button btn btn-link float-right"></button>
+                <span><ProductIdLinkButton ProductId="@vm.ProductTicker.ProductId" HasOpenPositions="@vm.HasOpenPositions" /></span>&nbsp;
+                <span><strong>@vm.ProductTicker.Last.Bid</strong></span>&nbsp;
+            </div>
+        </div>
+        <div>
+            <ProductStatsPanel ProductId="@vm.ProductTicker.ProductId" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ProductTickerVM vm { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            AttachEvent();
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose()
+    {
+        DetachEvent();
+    }
+
+    public void AttachEvent()
+    {
+        vm.ProductTicker.OnTick += ProductTicker_OnTick;
+    }
+
+    public void DetachEvent()
+    {
+        vm.ProductTicker.OnTick -= ProductTicker_OnTick;
+    }
+
+    private async void ProductTicker_OnTick(object sender, Rate e)
+    {
+        await InvokeAsync(() => StateHasChanged());
+    }
+}

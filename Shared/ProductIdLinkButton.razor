@@ -1,0 +1,16 @@
+﻿<a class="rounded @GetHighlightCssIfHasOpenPositions()" target="_blank" title="Open @ProductId in Coinbase Pro" href="@CoinBaseProductUri">@ProductId</a>
+
+@code {
+    private string CoinBaseProductUri => $"https://pro.coinbase.com/trade/{ProductId}";
+
+    [Parameter]
+    public string ProductId { get; set; }
+
+    [Parameter]
+    public bool HasOpenPositions { get; set; }
+
+    public string GetHighlightCssIfHasOpenPositions()
+    {
+        return HasOpenPositions ? "productid-highlight" : "productid";
+    }
+}
